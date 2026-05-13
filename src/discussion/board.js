@@ -26,12 +26,14 @@
 
 // --- Global Data Store ---
 // Holds the topics currently displayed in the list.
-let topics = [];
+let topics = []
 
 // --- Element Selections ---
 // TODO: Select the new-topic form by id 'new-topic-form'.
+const newTopicForm = document.getElementById("new-topic-form")
 
 // TODO: Select the topic list container by id 'topic-list-container'.
+const topicListContainer = document.getElementById("topic-list-container")
 
 // --- Functions ---
 
@@ -62,6 +64,39 @@ let topics = [];
  */
 function createTopicArticle(topic) {
   // ... your implementation here ...
+  const article = document.createElement("article")
+
+  const heading = document.createElement("h3")
+
+  const link = document.createElement("a")
+  link.href = `topic.html?id=${topic.id}`
+  link.textContent = topic.subject
+
+  heading.appendChild(link)
+
+  const footer = document.createElement("footer")
+  footer.textContent = `Posted by: ${topic.author} on ${topic.created_at}`
+
+  const div = document.createElement("div")
+
+  const editButton = document.createElement("button")
+  editButton.className = "edit-btn"
+  editButton.dataset.id = topic.id
+  editButton.textContent = "Edit"
+
+  const deleteButton = document.createElement("button")
+  deleteButton.className = "delete-btn"
+  deleteButton.dataset.id = topic.id
+  deleteButton.textContent = "Delete"
+
+  div.appendChild(editButton)
+  div.appendChild(deleteButton)
+
+  article.appendChild(heading)
+  article.appendChild(footer)
+  article.appendChild(div)
+
+  return article
 }
 
 /**
@@ -75,6 +110,12 @@ function createTopicArticle(topic) {
  */
 function renderTopics() {
   // ... your implementation here ...
+  topicListContainer.innerHTML = ""
+
+  topics.forEach((topic) => {
+    const article = createTopicArticle(topic)
+    topicListContainer.appendChild(article)
+  })
 }
 
 /**
@@ -98,6 +139,36 @@ function renderTopics() {
  */
 async function handleCreateTopic(event) {
   // ... your implementation here ...
+  event.preventDefault()
+
+  const subject = document.getElementById("topic-subject").value
+  const message = document.getElementById("topic-message").value
+
+  const response = await fetch("./api/index.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      subject,
+      message,
+      author: "Student",
+    }),
+  })
+
+  const result = await response.json()
+  if (result.success === true) {
+    topics.push({
+      id: result.id,
+      subject,
+      message,
+      author: "Student",
+      created_at: result.created_at,
+    })
+
+    renderTopics()
+    newTopicForm.reset()
+  }
 }
 
 /**
@@ -116,6 +187,28 @@ async function handleCreateTopic(event) {
  */
 async function handleUpdateTopic(id, fields) {
   // ... your implementation here ...
+  const response = await fetch("./api/index.php", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id,
+      subject: fields.subject,
+      message: fields.message,
+    }),
+  })
+
+  const result = await response.json()
+
+  if (result.success === true) {
+    const topic = topics.find((topic) => topic.id === id)
+
+    topic.subject = fields.subject
+    topic.message = fields.message
+
+    renderTopics()
+  }
 }
 
 /**
@@ -138,6 +231,32 @@ async function handleUpdateTopic(id, fields) {
  */
 async function handleTopicListClick(event) {
   // ... your implementation here ...
+  if (event.target.classList.contains("delete-btn")) {
+    const id = Number(event.target.dataset.id)
+
+    const response = await fetch(`./api/index.php?id=${id}`, {
+      method: "DELETE",
+    })
+
+    const result = await response.json()
+
+    if (result.success === true) {
+      topics = topics.filter((topic) => topic.id !== id)
+      renderTopics()
+    }
+  }
+
+  if (event.target.classList.contains("edit-btn")) {
+    const id = Number(event.target.dataset.id)
+
+    const topic = topics.find((topic) => topic.id === id)
+
+    document.getElementById("topic-subject").value = topic.subject
+    document.getElementById("topic-message").value = topic.message
+    const button = document.getElementById("create-topic")
+    button.textContent = "Update Topic"
+    button.dataset.editId = topic.id
+  }
 }
 
 /**
@@ -155,7 +274,18 @@ async function handleTopicListClick(event) {
  */
 async function loadAndInitialize() {
   // ... your implementation here ...
+  const response = await fetch("./api/index.php")
+
+  const result = await response.json()
+
+  topics = result.data
+
+  renderTopics()
+
+  newTopicForm.addEventListener("submit", handleCreateTopic)
+
+  topicListContainer.addEventListener("click", handleTopicListClick)
 }
 
 // --- Initial Page Load ---
-loadAndInitialize();
+loadAndInitialize()
