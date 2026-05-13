@@ -25,7 +25,7 @@ The website covers five functional areas, each assigned to one team member.
 | 2 | Course Resources |202008599 |8599uob |
 | 3 | Weekly Breakdown | | |
 | 4 | Assignments | | |
-| 5 | Discussion Board | | |
+| 5 | Discussion Board |20174802 |Masooma Ebrahim |
 
 ---
 
