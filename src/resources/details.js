@@ -23,6 +23,12 @@ let currentComments = [];
 
 // --- Element Selections ---
 // TODO: Select all the elements you added IDs for in step 2.
+const resourceTitle = document.querySelector('#resource-title');
+const resourceDescription = document.querySelector('#resource-description');
+const resourceLink = document.querySelector('#resource-link');
+const commentList = document.querySelector('#comment-list');
+const commentForm = document.querySelector('#comment-form');
+const newCommentInput = document.querySelector('#new-comment');
 
 // --- Functions ---
 
@@ -35,6 +41,8 @@ let currentComments = [];
  */
 function getResourceIdFromURL() {
   // ... your implementation here ...
+  const params = new URLSearchParams(window.location.search);
+    return params.get('id');
 }
 
 /**
@@ -50,6 +58,9 @@ function getResourceIdFromURL() {
  */
 function renderResourceDetails(resource) {
   // ... your implementation here ...
+  resourceTitle.textContent = resource.title;
+    resourceDescription.textContent = resource.description;
+    resourceLink.href = resource.link;
 }
 
 /**
@@ -62,6 +73,12 @@ function renderResourceDetails(resource) {
  */
 function createCommentArticle(comment) {
   // ... your implementation here ...
+  const article = document.createElement('article');
+    article.innerHTML = `
+        <p>${comment.text}</p>
+        <footer>Posted by: ${comment.author}</footer>
+    `;
+    return article;
 }
 
 /**
@@ -74,6 +91,11 @@ function createCommentArticle(comment) {
  */
 function renderComments() {
   // ... your implementation here ...
+  commentList.innerHTML = '';
+    currentComments.forEach(comment => {
+        const article = createCommentArticle(comment);
+        commentList.appendChild(article);
+    });
 }
 
 /**
@@ -100,6 +122,27 @@ function renderComments() {
  */
 function handleAddComment(event) {
   // ... your implementation here ...
+  event.preventDefault();
+    const commentText = newCommentInput.value.trim();
+
+    if (!commentText) return;
+
+    const response = await fetch('./api/index.php?action=comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            resource_id: currentResourceId,
+            author: 'Student',
+            text: commentText
+        })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        currentComments.push(result.data);
+        renderComments();
+        newCommentInput.value = '';
+    }
 }
 
 /**
@@ -126,6 +169,29 @@ function handleAddComment(event) {
  */
 async function initializePage() {
   // ... your implementation here ...
+  currentResourceId = getResourceIdFromURL();
+
+    if (!currentResourceId) {
+        resourceTitle.textContent = "Resource not found.";
+        return;
+    }
+
+    const [resResponse, comResponse] = await Promise.all([
+        fetch(`./api/index.php?id=${currentResourceId}`),
+        fetch(`./api/index.php?resource_id=${currentResourceId}&action=comments`)
+    ]);
+
+    const resData = await resResponse.json();
+    const comData = await comResponse.json();
+
+    if (resData.success) {
+        renderResourceDetails(resData.data);
+        currentComments = comData.success ? comData.data : [];
+        renderComments();
+        commentForm.addEventListener('submit', handleAddComment);
+    } else {
+        resourceTitle.textContent = "Resource not found.";
+    }
 }
 
 // --- Initial Page Load ---

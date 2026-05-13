@@ -21,7 +21,12 @@ let resources = [];
 // TODO: Select the resources table body ('#resources-tbody').
 
 // --- Functions ---
-
+const resourceForm = document.querySelector('#resource-form');
+const resourcesTbody = document.querySelector('#resources-tbody');
+const resourceTitleInput = document.querySelector('#resource-title');
+const resourceDescriptionInput = document.querySelector('#resource-description');
+const resourceLinkInput = document.querySelector('#resource-link');
+const submitBtn = document.querySelector('#add-resource');
 /**
  * TODO: Implement the createResourceRow function.
  * It takes one resource object { id, title, description, link }.
@@ -35,6 +40,17 @@ let resources = [];
  */
 function createResourceRow(resource) {
   // ... your implementation here ...
+  const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${resource.title}</td>
+        <td>${resource.description}</td>
+        <td><a href="${resource.link}" target="_blank">Link</a></td>
+        <td>
+            <button class="edit-btn" data-id="${resource.id}">Edit</button>
+            <button class="delete-btn" data-id="${resource.id}">Delete</button>
+        </td>
+    `;
+    return tr;
 }
 
 /**
@@ -47,6 +63,11 @@ function createResourceRow(resource) {
  */
 function renderTable() {
   // ... your implementation here ...
+  resourcesTbody.innerHTML = '';
+    resources.forEach(resource => {
+        const row = createResourceRow(resource);
+        resourcesTbody.appendChild(row);
+    });
 }
 
 /**
@@ -70,6 +91,36 @@ function renderTable() {
  */
 function handleAddResource(event) {
   // ... your implementation here ...
+  event.preventDefault();
+    const id = submitBtn.getAttribute('data-editing-id');
+    const resourceData = {
+        title: resourceTitleInput.value,
+        description: resourceDescriptionInput.value,
+        link: resourceLinkInput.value
+    };
+
+    const method = id ? 'PUT' : 'POST';
+    if (id) resourceData.id = id;
+
+    const response = await fetch('./api/index.php', {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resourceData)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        if (id) {
+            const index = resources.findIndex(r => r.id == id);
+            resources[index] = { ...resourceData };
+        } else {
+            resources.push({ ...resourceData, id: result.id });
+        }
+        renderTable();
+        resourceForm.reset();
+        submitBtn.textContent = "Add Resource";
+        submitBtn.removeAttribute('data-editing-id');
+    }
 }
 
 /**
@@ -105,6 +156,23 @@ function handleAddResource(event) {
  */
 function handleTableClick(event) {
   // ... your implementation here ...
+  const id = event.target.getAttribute('data-id');
+    
+    if (event.target.classList.contains('delete-btn')) {
+        const response = await fetch(`./api/index.php?id=${id}`, { method: 'DELETE' });
+        const result = await response.json();
+        if (result.success) {
+            resources = resources.filter(r => r.id != id);
+            renderTable();
+        }
+    } else if (event.target.classList.contains('edit-btn')) {
+        const resource = resources.find(r => r.id == id);
+        resourceTitleInput.value = resource.title;
+        resourceDescriptionInput.value = resource.description;
+        resourceLinkInput.value = resource.link;
+        submitBtn.textContent = "Update Resource";
+        submitBtn.setAttribute('data-editing-id', id);
+    }
 }
 
 /**
@@ -123,6 +191,15 @@ function handleTableClick(event) {
  */
 async function loadAndInitialize() {
   // ... your implementation here ...
+  const response = await fetch('./api/index.php');
+    const result = await response.json();
+
+    if (result.success) {
+        resources = result.data;
+        renderTable();
+        resourceForm.addEventListener('submit', handleAddResource);
+        resourcesTbody.addEventListener('click', handleTableClick);
+    }
 }
 
 // --- Initial Page Load ---

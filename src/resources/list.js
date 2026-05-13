@@ -13,7 +13,7 @@
 
 // --- Element Selections ---
 // TODO: Select the section for the resource list ('#resource-list-section').
-
+const resourceListSection = document.querySelector('#resource-list-section');
 // --- Functions ---
 
 /**
@@ -25,6 +25,15 @@
  */
 function createResourceArticle(resource) {
   // ... your implementation here ...
+  const article = document.createElement('article');
+    
+    article.innerHTML = `
+        <h3>${resource.title}</h3>
+        <p>${resource.description}</p>
+        <a href="details.html?id=${resource.id}">View Resource & Discussion</a>
+    `;
+    
+    return article;
 }
 
 /**
@@ -41,6 +50,13 @@ function createResourceArticle(resource) {
  */
 async function loadResources() {
   // ... your implementation here ...
+  const response = await fetch('./api/index.php');
+  const data = await response.json();
+  resourceListSection.innerHTML = '';
+  data.forEach(resource => {
+        const article = createResourceArticle(resource);
+        resourceListSection.appendChild(article);
+    });
 }
 
 // --- Initial Page Load ---
