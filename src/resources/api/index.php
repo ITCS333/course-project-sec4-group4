@@ -771,6 +771,5 @@ function validateRequiredFields($data, $requiredFields) {
         'missing' => $missing
     ];
 
-
 }
 ?>
